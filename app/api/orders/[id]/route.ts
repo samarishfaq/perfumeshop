@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import {connectToDatabase} from "@/lib/mongoose";
+import { connectToDatabase } from "@/lib/mongoose";
 import Order from "@/models/Order";
 
-interface Params {
-  params: { id: string };
-}
-
-// ✅ GET one order by ID
-export async function GET(req: Request, { params }: Params) {
+// ✅ No custom interface — just inline type
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   try {
     await connectToDatabase();
     const order = await Order.findById(params.id);
@@ -23,8 +22,10 @@ export async function GET(req: Request, { params }: Params) {
   }
 }
 
-// ✅ PUT update order
-export async function PUT(req: Request, { params }: Params) {
+export async function PUT(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   try {
     await connectToDatabase();
     const body = await req.json();
@@ -44,8 +45,10 @@ export async function PUT(req: Request, { params }: Params) {
   }
 }
 
-// ✅ DELETE order
-export async function DELETE(req: Request, { params }: Params) {
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   try {
     await connectToDatabase();
     const deletedOrder = await Order.findByIdAndDelete(params.id);
