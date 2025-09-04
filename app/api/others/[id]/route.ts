@@ -1,16 +1,28 @@
-import { NextResponse } from "next/server";
-import {connectToDatabase} from "@/lib/mongoose";
+import { NextRequest, NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/mongoose";
 import Other from "@/models/Other";
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  await connectToDatabase();
-  const body = await req.json();
-  const updated = await Other.findByIdAndUpdate(params.id, body, { new: true });
-  return NextResponse.json({ success: true, data: updated });
+// ✅ PUT update
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await context.params; // 👈 await
+    await connectToDatabase();
+    const body = await request.json();
+    const updated = await Other.findByIdAndUpdate(id, body, { new: true });
+    return NextResponse.json({ success: true, data: updated });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message || "Update error" }, { status: 500 });
+  }
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
-  await connectToDatabase();
-  await Other.findByIdAndDelete(params.id);
-  return NextResponse.json({ success: true });
+// ✅ DELETE
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await context.params; // 👈 await
+    await connectToDatabase();
+    await Other.findByIdAndDelete(id);
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message || "Delete error" }, { status: 500 });
+  }
 }
