@@ -1,11 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongoose";
 import Product from "@/models/Product";
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+// ✅ GET product by ID
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await context.params; // 👈 await required
     await connectToDatabase();
-    const product = await Product.findById(params.id).lean();
+    const product = await Product.findById(id).lean();
     if (!product) return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
     return NextResponse.json({ success: true, data: product }, { status: 200 });
   } catch (err: any) {
@@ -13,12 +15,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+// ✅ PUT update product
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await context.params; // 👈 await required
     const body = await request.json();
     await connectToDatabase();
     const updated = await Product.findByIdAndUpdate(
-      params.id,
+      id,
       {
         name: body.name,
         company: body.company,
@@ -35,10 +39,12 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+// ✅ DELETE product
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await context.params; // 👈 await required
     await connectToDatabase();
-    const deleted = await Product.findByIdAndDelete(params.id);
+    const deleted = await Product.findByIdAndDelete(id);
     if (!deleted) return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
     return NextResponse.json({ success: true, data: deleted }, { status: 200 });
   } catch (err: any) {
