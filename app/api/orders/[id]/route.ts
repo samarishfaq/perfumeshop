@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/mongoose";
+import dbConnect from "@/lib/mongoose";
 import Order from "@/models/Order";
 
 // ✅ GET one order by ID
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params; // 👈 await here
-    await connectToDatabase();
+    await dbConnect();
     const order = await Order.findById(id);
     if (!order) {
       return NextResponse.json({ message: "Order not found" }, { status: 404 });
@@ -22,7 +22,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
   try {
     const { id } = await context.params; // 👈 await here
     const body = await request.json();
-    await connectToDatabase();
+    await dbConnect();
     const updatedOrder = await Order.findByIdAndUpdate(id, body, { new: true });
 
     if (!updatedOrder) {
@@ -38,7 +38,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
 export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params; // 👈 await here
-    await connectToDatabase();
+    await dbConnect();
     const deletedOrder = await Order.findByIdAndDelete(id);
 
     if (!deletedOrder) {

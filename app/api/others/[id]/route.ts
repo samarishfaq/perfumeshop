@@ -1,28 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/mongoose";
+import dbConnect from "@/lib/mongoose";
 import Other from "@/models/Other";
 
-// ✅ PUT update
-export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+// ✅ PUT (Update Other product)
+export async function PUT(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id } = await context.params; // 👈 await
-    await connectToDatabase();
+    const { id } = await context.params;
+    await dbConnect();
+
     const body = await request.json();
-    const updated = await Other.findByIdAndUpdate(id, body, { new: true });
+    const { name, description, price } = body;
+
+    // Validation to ensure required fields exist
+    if (!name || !price) {
+      return NextResponse.json(
+        { success: false, error: "Name and price are required" },
+        { status: 400 }
+      );
+    }
+
+    const updated = await Other.findByIdAndUpdate(
+      id,
+      { name, description, price },
+      { new: true }
+    );
+
     return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message || "Update error" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message || "Update error" },
+      { status: 500 }
+    );
   }
 }
 
-// ✅ DELETE
-export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+// ✅ DELETE (Remove Other product)
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id } = await context.params; // 👈 await
-    await connectToDatabase();
+    const { id } = await context.params;
+    await dbConnect();
+
     await Other.findByIdAndDelete(id);
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message || "Delete error" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message || "Delete error" },
+      { status: 500 }
+    );
   }
 }

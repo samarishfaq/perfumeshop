@@ -1,37 +1,50 @@
 import { NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/mongoose";
+import dbConnect from "@/lib/mongoose";
 import Product from "@/models/Product";
 
+// ✅ GET all products
 export async function GET() {
   try {
-    await connectToDatabase();
+    await dbConnect();
     const products = await Product.find().sort({ createdAt: -1 }).lean();
     return NextResponse.json({ success: true, data: products }, { status: 200 });
   } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message || "DB error" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: err.message || "Database error" },
+      { status: 500 }
+    );
   }
 }
 
+// ✅ POST create new product
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, company, buyingPrice, sellingPrice, profit } = body;
+    const { name, description, variants } = body;
 
-    if (!name || !company || buyingPrice == null || sellingPrice == null) {
-      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
+    // Basic validation
+    if (!name || !Array.isArray(variants) || variants.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Product name and at least one variant are required",
+        },
+        { status: 400 }
+      );
     }
 
-    await connectToDatabase();
+    await dbConnect();
     const created = await Product.create({
       name,
-      company,
-      buyingPrice: Number(buyingPrice),
-      sellingPrice: Number(sellingPrice),
-      profit: profit != null ? Number(profit) : undefined,
+      description,
+      variants,
     });
 
     return NextResponse.json({ success: true, data: created }, { status: 201 });
   } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message || "Create error" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: err.message || "Create error" },
+      { status: 500 }
+    );
   }
 }

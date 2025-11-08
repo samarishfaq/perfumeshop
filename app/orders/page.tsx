@@ -53,7 +53,6 @@ export default function OrdersPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // ✅ Add Order
   async function handleAddOrder() {
     if (!form.productName || !form.productPrice) {
       toast.error("Please fill required fields!");
@@ -98,7 +97,6 @@ export default function OrdersPage() {
     }
   }
 
-  // ✅ Delete Order
   async function handleDelete(id: string) {
     try {
       const res = await fetch(`/api/orders/${id}`, { method: "DELETE" });
@@ -114,7 +112,6 @@ export default function OrdersPage() {
     }
   }
 
-  // ✅ Print Receipt (centered small page)
   const handlePrint = () => {
     if (receipt) {
       const printContent =
@@ -126,9 +123,9 @@ export default function OrdersPage() {
             <head>
               <title>Receipt</title>
               <style>
-                body { display: flex; align-items: center; justify-content: center; height: 100vh; }
-                .receipt-box { border: 1px dashed #000; padding: 20px; width: 250px; text-align: center; }
-                h2 { margin-bottom: 10px; }
+                body { display: flex; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; }
+                .receipt-box { border: 1px dashed #008080; padding: 20px; width: 250px; text-align: center; }
+                h2 { margin-bottom: 10px; color: #008080; }
                 p { margin: 4px 0; font-size: 14px; }
               </style>
             </head>
@@ -145,7 +142,6 @@ export default function OrdersPage() {
     }
   };
 
-  // ✅ Filter Orders
   const filteredOrders = orders.filter(
     (o) =>
       o.productName.toLowerCase().includes(search.toLowerCase()) ||
@@ -153,40 +149,28 @@ export default function OrdersPage() {
   );
 
   return (
-    <div className="min-h-screen p-6 font-sans text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen p-6 font-sans bg-gradient-to-b from-teal-50 via-white to-teal-100 dark:from-teal-900 dark:via-gray-950 dark:to-teal-900 text-gray-900 dark:text-gray-100">
       <Toaster position="top-right" />
 
       <motion.h1
         initial={{ y: -40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="text-3xl max-md:text-2xl font-bold text-center mb-8 text-yellow-500 dark:text-teal-500"
+        className="text-3xl max-md:text-2xl font-bold text-center mb-8 text-teal-600 dark:text-teal-400"
       >
         🛒 Manage Orders
       </motion.h1>
 
       {/* Order Form */}
-      <div className="w-full bg-gray-100 dark:bg-gray-900 rounded-2xl p-6 shadow mb-6">
-        <h2 className="text-xl font-semibold mb-4">➕ Add New Order</h2>
+      <div className="w-full bg-white dark:bg-gray-800 rounded-2xl p-6 shadow mb-6">
+        <h2 className="text-xl font-semibold mb-4 text-teal-600 dark:text-teal-400">➕ Add New Order</h2>
 
         <div className="max-md:flex max-md:flex-col grid grid-cols-2 gap-4">
           {[
             { name: "productName", type: "text", placeholder: "Product Name" },
-            {
-              name: "productPrice",
-              type: "number",
-              placeholder: "Product Price",
-            },
-            {
-              name: "remainingPayment",
-              type: "number",
-              placeholder: "Remaining Payment (Optional)",
-            },
-            {
-              name: "paymentMethod",
-              type: "text",
-              placeholder: "Payment Method (Optional)",
-            },
+            { name: "productPrice", type: "number", placeholder: "Product Price" },
+            { name: "remainingPayment", type: "number", placeholder: "Remaining Payment (Optional)" },
+            { name: "paymentMethod", type: "text", placeholder: "Payment Method (Optional)" },
           ].map((field) => (
             <div key={field.name} className="flex flex-col">
               <input
@@ -195,7 +179,7 @@ export default function OrdersPage() {
                 placeholder={field.placeholder}
                 value={(form as any)[field.name]}
                 onChange={handleChange}
-                className="p-3 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800"
+                className="p-3 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
               />
             </div>
           ))}
@@ -206,7 +190,7 @@ export default function OrdersPage() {
               value={form.description}
               onChange={handleChange}
               placeholder="Product Description"
-              className="p-3 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800"
+              className="p-3 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
             />
           </div>
         </div>
@@ -217,7 +201,7 @@ export default function OrdersPage() {
           className={`mt-6 w-full py-3 rounded-xl transition ${
             loading
               ? "bg-gray-400 cursor-not-allowed text-white"
-              : "bg-yellow-500 text-black hover:opacity-90 cursor-pointer dark:bg-teal-500 dark:text-white"
+              : "bg-teal-500 cursor-pointer text-white hover:bg-teal-600 dark:bg-teal-600 dark:hover:bg-teal-700"
           }`}
         >
           {loading ? "Saving..." : "Save Order"}
@@ -225,65 +209,44 @@ export default function OrdersPage() {
       </div>
 
       {/* Search Bar */}
-      <div className=" mt-10 relative">
+      <div className="mt-6 relative">
         <input
           type="text"
           placeholder="🔍 Search by product or payment method..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full p-3 rounded-xl border dark:border-gray-700 bg-white dark:bg-gray-900 pr-12"
+          className="w-full p-3 rounded-xl border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 pr-12 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
         />
-        <Search className="absolute right-3 top-3 text-gray-500 dark:text-gray-400" />
+        <Search className="absolute right-3 top-3 text-gray-400 dark:text-gray-500" />
       </div>
 
       {/* Receipt Modal */}
       {receipt && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 p-6 rounded-xl w-full max-w-md shadow-lg relative">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl w-full max-w-md shadow-lg relative">
             <div id="receipt-content">
-              <h2 className="text-center text-2xl font-bold mb-4">
+              <h2 className="text-center text-2xl font-bold mb-4 text-teal-600 dark:text-teal-400">
                 Perfume Shop
               </h2>
-              <p>
-                <strong>Product:</strong> {receipt.productName}
-              </p>
-              <p>
-                <strong>Price:</strong> Rs {receipt.productPrice}
-              </p>
-              <p>
-                <strong>Remaining:</strong> {receipt.remainingPayment || "—"}
-              </p>
-              <p>
-                <strong>Payment Method:</strong> {receipt.paymentMethod || "—"}
-              </p>
-              <p>
-                <strong>Description:</strong> {receipt.description || "—"}
-              </p>
-              <p>
-                <strong>Date:</strong>{" "}
-                {new Date(receipt.createdAt || "").toLocaleDateString()}
-              </p>
-              <p>
-                <strong>Time:</strong>{" "}
-                {new Date(receipt.createdAt || "").toLocaleTimeString()}
-              </p>
-              <p>
-                <strong>Day:</strong>{" "}
-                {new Date(receipt.createdAt || "").toLocaleDateString("en-US", {
-                  weekday: "long",
-                })}
-              </p>
+              <p><strong>Product:</strong> {receipt.productName}</p>
+              <p><strong>Price:</strong> Rs {receipt.productPrice}</p>
+              <p><strong>Remaining:</strong> {receipt.remainingPayment || "—"}</p>
+              <p><strong>Payment Method:</strong> {receipt.paymentMethod || "—"}</p>
+              <p><strong>Description:</strong> {receipt.description || "—"}</p>
+              <p><strong>Date:</strong> {new Date(receipt.createdAt || "").toLocaleDateString()}</p>
+              <p><strong>Time:</strong> {new Date(receipt.createdAt || "").toLocaleTimeString()}</p>
+              <p><strong>Day:</strong> {new Date(receipt.createdAt || "").toLocaleDateString("en-US", { weekday: "long" })}</p>
             </div>
             <div className="mt-6 flex justify-between">
               <button
                 onClick={handlePrint}
-                className="px-4 py-2 cursor-pointer hover:bg-teal-500/80 bg-teal-500 text-white rounded-lg flex items-center gap-2"
+                className="px-4 py-2 cursor-pointer bg-teal-500 hover:bg-teal-600 text-white rounded-lg flex items-center gap-2 transition"
               >
                 <Printer size={18} /> Print
               </button>
               <button
                 onClick={() => setReceipt(null)}
-                className="px-4 py-2 cursor-pointer hover:bg-red-500/80 bg-red-500 text-white rounded-lg"
+                className="px-4 py-2 cursor-pointer bg-red-500 hover:bg-red-600 text-white rounded-lg transition"
               >
                 Close
               </button>
@@ -299,89 +262,38 @@ export default function OrdersPage() {
         transition={{ duration: 0.6 }}
         className="overflow-x-auto mt-8"
       >
-        <table className="w-full border-collapse bg-white dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden">
+        <table className="w-full border-collapse bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
           <thead>
-            <tr className="bg-gray-100 dark:bg-gray-800 text-left">
-              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-yellow-600 dark:text-teal-400">
-                Name
-              </th>
-              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-yellow-600 dark:text-teal-400">
-                Price
-              </th>
-              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-yellow-600 dark:text-teal-400">
-                Remaining
-              </th>
-              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-yellow-600 dark:text-teal-400">
-                Method
-              </th>
-              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-yellow-600 dark:text-teal-400">
-                Date
-              </th>
-              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-yellow-600 dark:text-teal-400">
-                Time
-              </th>
-              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-yellow-600 dark:text-teal-400">
-                Day
-              </th>
-              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-yellow-600 dark:text-teal-400">
-                Actions
-              </th>
+            <tr className="bg-teal-100 dark:bg-teal-800 text-left">
+              {["Name","Price","Remaining","Method","Date","Time","Day","Actions"].map((h) => (
+                <th key={h} className="p-3 border-r border-gray-300 dark:border-gray-700 text-teal-600 dark:text-teal-400 min-w-[150px]">{h}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {filteredOrders.length > 0 ? (
-              filteredOrders.map((o) => (
-                <motion.tr
-                  key={o._id}
-                  className="border-b border-gray-200 dark:border-gray-700"
-                >
-                  <td className="w-full p-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
-                    {o.productName}
-                  </td>
-                  <td className="w-full p-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
-                    Rs {o.productPrice}
-                  </td>
-                  <td className="w-full p-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
-                    {o.remainingPayment || "—"}
-                  </td>
-                  <td className="w-full p-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
-                    {o.paymentMethod || "—"}
-                  </td>
-                  <td className="w-full p-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
-                    {new Date(o.createdAt || "").toLocaleDateString()}
-                  </td>
-                  <td className="w-full p-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
-                    {new Date(o.createdAt || "").toLocaleTimeString()}
-                  </td>
-                  <td className="w-full p-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
-                    {new Date(o.createdAt || "").toLocaleDateString("en-US", {
-                      weekday: "long",
-                    })}
-                  </td>
-                  <td className="w-full p-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
-                    <ConfirmDialog
-                      trigger={
-                        <button className="text-red-500 cursor-pointer hover:scale-110 transition">
-                          <Trash2 size={20} />
-                        </button>
-                      }
-                      title="Delete Order?"
-                      description={`This will permanently delete "${o.productName}". Are you sure?`}
-                      confirmText="Delete"
-                      cancelText="Cancel"
-                      onConfirm={() => handleDelete(o._id!)}
-                    />
-                  </td>
-                </motion.tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={8}
-                  className="text-center p-6 text-gray-500 dark:text-gray-400"
-                >
-                  No orders found!
+            {filteredOrders.length > 0 ? filteredOrders.map((o) => (
+              <motion.tr key={o._id} className="border-b border-gray-200 dark:border-gray-700">
+                <td className="p-2 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">{o.productName}</td>
+                <td className="p-2 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">Rs {o.productPrice}</td>
+                <td className="p-2 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">{o.remainingPayment || "—"}</td>
+                <td className="p-2 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">{o.paymentMethod || "—"}</td>
+                <td className="p-2 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">{new Date(o.createdAt || "").toLocaleDateString()}</td>
+                <td className="p-2 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">{new Date(o.createdAt || "").toLocaleTimeString()}</td>
+                <td className="p-2 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">{new Date(o.createdAt || "").toLocaleDateString("en-US",{weekday:"long"})}</td>
+                <td className="p-2 border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                  <ConfirmDialog
+                    trigger={<button className="text-red-500 cursor-pointer hover:scale-110 transition"><Trash2 size={20} /></button>}
+                    title="Delete Order?"
+                    description={`This will permanently delete "${o.productName}". Are you sure?`}
+                    confirmText="Delete"
+                    cancelText="Cancel"
+                    onConfirm={() => handleDelete(o._id!)}
+                  />
                 </td>
+              </motion.tr>
+            )) : (
+              <tr>
+                <td colSpan={8} className="text-center p-6 text-gray-500 dark:text-gray-400">No orders found!</td>
               </tr>
             )}
           </tbody>

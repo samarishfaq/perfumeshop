@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Package, ShoppingCart } from "lucide-react";
+import { Package, ShoppingCart, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function Home() {
@@ -10,7 +10,6 @@ export default function Home() {
   const [otherProducts, setOtherProducts] = useState(0);
   const [totalOrders, setTotalOrders] = useState(0);
 
-  // Fetch real data from backend
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -19,174 +18,149 @@ export default function Home() {
           fetch("/api/others"),
           fetch("/api/orders"),
         ]);
-
         const [products, others, orders] = await Promise.all([
           resProducts.json(),
           resOthers.json(),
           resOrders.json(),
         ]);
 
-       setPerfumeProducts((products.data || products).length || 0);
-setOtherProducts((others.data || others).length || 0);
-setTotalOrders((orders.data || orders).length || 0);
+        setPerfumeProducts((products.data || products).length || 0);
+        setOtherProducts((others.data || others).length || 0);
+        setTotalOrders((orders.data || orders).length || 0);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
     };
-
     fetchData();
   }, []);
 
+  const stats = [
+    { title: "Perfume Products", value: perfumeProducts, icon: <Package /> },
+    { title: "Other Products", value: otherProducts, icon: <Package /> },
+    { title: "Total Orders", value: totalOrders, icon: <ShoppingCart /> },
+  ];
+
+  const actions = [
+    {
+      title: "Manage Products",
+      description: "Add, edit or remove your products easily.",
+      icon: <Package className="h-8 w-8 mx-auto text-teal-500 dark:text-teal-400" />,
+      link: "/products",
+    },
+    {
+      title: "View Orders",
+      description: "Check your customer orders anytime.",
+      icon: <ShoppingCart className="h-8 w-8 mx-auto text-teal-500 dark:text-teal-400" />,
+      link: "/orders",
+    },
+  ];
+
   return (
-    <div className="font-sans text-gray-900 dark:text-gray-100">
-      {/* Hero / Welcome */}
-      <section className="relative min-h-[60vh] p-5 flex flex-col justify-center items-center text-center bg-gradient-to-r from-yellow-500 to-yellow-700 dark:from-teal-500 dark:to-teal-700 text-white px-6">
-        <motion.h1
-          initial={{ opacity: 0, y: -40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-4xl max-md:text-2xl font-extrabold drop-shadow-lg"
-        >
-          Welcome Back, Shop Owner
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.8 }}
-          className="mt-4 max-md:text-sm text-lg opacity-90"
-        >
-          Manage your products, check orders, and track your sales in one place.
-        </motion.p>
+    <div className="font-sans text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-950 min-h-screen">
+      {/* Hero Section */}
+      <section className="relative flex flex-col items-center justify-center text-center p-10 bg-gradient-to-br from-teal-400 via-teal-500 to-teal-600 dark:from-teal-600 dark:via-teal-700 dark:to-teal-800 text-white shadow-md">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4, duration: 0.7 }}
-          className="mt-8 flex flex-wrap justify-center gap-4"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          className="flex flex-col items-center max-w-xl"
         >
-          <Link
-            href="/products"
-            className="px-6 py-3 bg-white max-md:text-sm text-yellow-700 font-semibold rounded-lg shadow hover:bg-gray-100 transition dark:bg-gray-900 dark:text-teal-400 dark:hover:bg-gray-800"
-          >
-            View Products
-          </Link>
-          <Link
-            href="/orders"
-            className="px-6 py-3 border max-md:text-sm border-white text-white font-semibold rounded-lg hover:bg-yellow-600/30 transition dark:hover:bg-teal-600/30"
-          >
-            Check Orders
-          </Link>
+          <Sparkles className="w-10 h-10 mb-3 text-white" />
+          <h1 className="text-4xl max-md:text-2xl font-extrabold tracking-tight drop-shadow-md">
+            Welcome Back, Shop Owner ✨
+          </h1>
+          <p className="mt-3 text-base sm:text-lg opacity-90">
+            Manage your perfumes, track orders, and keep your business glowing.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/products"
+              className="px-5 py-2 sm:px-6 sm:py-3 bg-white text-teal-600 font-semibold rounded-lg shadow hover:bg-gray-100 transition dark:bg-gray-900 dark:text-teal-400 dark:hover:bg-gray-800 text-sm sm:text-base"
+            >
+              Manage Products
+            </Link>
+            <Link
+              href="/orders"
+              className="px-5 py-2 sm:px-6 sm:py-3 border border-white text-white font-semibold rounded-lg hover:bg-white/20 transition text-sm sm:text-base"
+            >
+              View Orders
+            </Link>
+          </div>
         </motion.div>
       </section>
 
-      {/* Stats Overview */}
-      <section className="py-12 px-6 sm:px-12 bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-5xl mx-auto text-center mb-10">
-          <h2 className="text-3xl max-md:text-2xl font-bold text-yellow-600 dark:text-teal-400">
-            Shop Overview
+      {/* Stats Section */}
+      <section className="py-6 px-4 sm:py-12">
+        <div className="max-w-5xl mx-auto text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold text-teal-600 dark:text-teal-400">
+            Store Overview
           </h2>
-          <p className="mt-2 max-md:text-sm text-gray-600 dark:text-gray-300">
-            Quick stats about your store.
+          <p className="mt-1 sm:mt-2 text-gray-600 dark:text-gray-300 text-sm sm:text-base">
+            A quick look at your current business stats.
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg text-center"
-          >
-            <Package className="h-10 w-10 mx-auto text-yellow-600 dark:text-teal-400" />
-            <p className="text-3xl font-bold mt-3 text-yellow-600 dark:text-teal-400">
-              {perfumeProducts}
-            </p>
-            <p className="mt-2 text-gray-700 dark:text-gray-300">
-              Perfume Products
-            </p>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg text-center"
-          >
-            <Package className="h-10 w-10 mx-auto text-yellow-600 dark:text-teal-400" />
-            <p className="text-3xl font-bold mt-3 text-yellow-600 dark:text-teal-400">
-              {otherProducts}
-            </p>
-            <p className="mt-2 text-gray-700 dark:text-gray-300">
-              Other Products
-            </p>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg text-center"
-          >
-            <ShoppingCart className="h-10 w-10 mx-auto text-yellow-600 dark:text-teal-400" />
-            <p className="text-3xl font-bold mt-3 text-yellow-600 dark:text-teal-400">
-              {totalOrders}
-            </p>
-            <p className="mt-2 text-gray-700 dark:text-gray-300">
-              Total Orders
-            </p>
-          </motion.div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mt-2 mx-auto">
+          {stats.map((item, i) => (
+            <motion.div
+              key={i}
+              whileHover={{ scale: 1.04 }}
+              className="bg-white dark:bg-gray-800 p-5 sm:p-6 rounded-2xl shadow-md text-center border border-gray-200 dark:border-gray-700"
+            >
+              <div className="flex justify-center mb-2 text-teal-500 dark:text-teal-400">
+                {item.icon}
+              </div>
+              <p className="text-3xl sm:text-4xl font-bold text-teal-600 dark:text-teal-400">
+                {item.value}
+              </p>
+              <p className="mt-1 sm:mt-2 text-gray-700 dark:text-gray-300 text-sm sm:text-base">
+                {item.title}
+              </p>
+            </motion.div>
+          ))}
         </div>
       </section>
 
-      {/* Quick Actions */}
-      <section className="py-12 px-6 sm:px-12 bg-white dark:bg-gray-950">
-        <div className="max-w-5xl mx-auto text-center mb-10">
-          <h2 className="text-3xl font-bold text-yellow-600 dark:text-teal-400">
+      {/* Actions Section */}
+      <section className="py-6 px-4 sm:py-12 bg-gradient-to-t from-teal-50 to-white dark:from-gray-900 dark:to-gray-950">
+        <div className="max-w-5xl mx-auto text-center mb-8 sm:mb-12">
+          <h2 className="text-2xl sm:text-3xl font-bold text-teal-600 dark:text-teal-400">
             Quick Actions
           </h2>
-          <p className="mt-2 text-gray-600 dark:text-gray-300">
-            Access important sections instantly.
+          <p className="mt-1 sm:mt-2 text-gray-600 dark:text-gray-300 text-sm sm:text-base">
+            Access important tools instantly.
           </p>
         </div>
-        <div className="grid sm:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 shadow-lg text-center"
-          >
-            <Package className="h-10 w-10 mx-auto text-yellow-600 dark:text-teal-400" />
-            <h3 className="text-lg font-semibold mt-3 text-yellow-600 dark:text-teal-400">
-              Manage Products
-            </h3>
-            <p className="text-sm mt-2 text-gray-600 dark:text-gray-300">
-              Add, edit or remove your products.
-            </p>
-            <Link
-              href="/products"
-              className="inline-block mt-4 px-4 py-2 rounded-lg bg-yellow-600 text-white font-medium hover:bg-yellow-700 dark:bg-teal-500 dark:hover:bg-teal-600 transition"
-            >
-              Go →
-            </Link>
-          </motion.div>
 
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 shadow-lg text-center"
-          >
-            <ShoppingCart className="h-10 w-10 mx-auto text-yellow-600 dark:text-teal-400" />
-            <h3 className="text-lg font-semibold mt-3 text-yellow-600 dark:text-teal-400">
-              View Orders
-            </h3>
-            <p className="text-sm mt-2 text-gray-600 dark:text-gray-300">
-              Check your customer orders easily.
-            </p>
-            <Link
-              href="/orders"
-              className="inline-block mt-4 px-4 py-2 rounded-lg bg-yellow-600 text-white font-medium hover:bg-yellow-700 dark:bg-teal-500 dark:hover:bg-teal-600 transition"
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-4xl mx-auto">
+          {actions.map((action, i) => (
+            <motion.div
+              key={i}
+              whileHover={{ scale: 1.04 }}
+              className="p-5 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-md text-center border border-teal-200 dark:border-teal-700"
             >
-              Go →
-            </Link>
-          </motion.div>
+              {action.icon}
+              <h3 className="text-lg sm:text-xl font-semibold mt-3 text-teal-600 dark:text-teal-400">
+                {action.title}
+              </h3>
+              <p className="text-sm sm:text-base mt-1 sm:mt-2 text-gray-600 dark:text-gray-300">
+                {action.description}
+              </p>
+              <Link
+                href={action.link}
+                className="inline-block mt-3 sm:mt-4 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-teal-600 text-white font-medium hover:bg-teal-700 transition text-sm sm:text-base"
+              >
+                Go →
+              </Link>
+            </motion.div>
+          ))}
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="p-6 bg-gray-100 dark:bg-gray-900 text-center text-gray-600 dark:text-gray-400">
+      <footer className="py-4 sm:py-6 text-center text-gray-600 dark:text-gray-400 border-t border-teal-200 dark:border-teal-700 text-sm sm:text-base">
         <p>
-          © {new Date().getFullYear()} Shop Owner Dashboard. All Rights
-          Reserved.
+          © {new Date().getFullYear()} Perfume Dashboard — Designed with Elegance 💎
         </p>
       </footer>
     </div>

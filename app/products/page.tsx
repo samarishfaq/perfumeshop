@@ -2,17 +2,24 @@
 
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Edit, Trash2, Search, Save, X } from "lucide-react";
+import {
+  Edit,
+  Trash2,
+  Search,
+  Save,
+  X,
+  PlusCircle,
+  MinusCircle,
+} from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 
+type VariantType = { size: string; price: number | string };
 type ProductType = {
   _id?: string;
   name: string;
-  company: string;
-  buyingPrice: number | string;
-  sellingPrice: number | string;
-  profit?: number | string;
+  description?: string;
+  variants: VariantType[];
 };
 
 export default function ProductsPage() {
@@ -21,10 +28,8 @@ export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [form, setForm] = useState<ProductType>({
     name: "",
-    company: "",
-    buyingPrice: "",
-    sellingPrice: "",
-    profit: "",
+    description: "",
+    variants: [{ size: "", price: "" }],
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -47,19 +52,37 @@ export default function ProductsPage() {
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVariantChange = (
+    index: number,
+    field: keyof VariantType,
+    value: string
+  ) => {
+    const updated = [...form.variants];
+    updated[index][field] = value;
+    setForm({ ...form, variants: updated });
+  };
+
+  const addVariant = () =>
+    setForm({ ...form, variants: [...form.variants, { size: "", price: "" }] });
+  const removeVariant = (index: number) =>
+    setForm({ ...form, variants: form.variants.filter((_, i) => i !== index) });
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setErrors({ ...errors, [e.target.name]: "" });
   };
 
   async function handleAddProduct() {
     let newErrors: Record<string, string> = {};
-
-    if (!form.name) newErrors.name = "This field is required";
-    if (!form.company) newErrors.company = "This field is required";
-    if (!form.buyingPrice) newErrors.buyingPrice = "This field is required";
-    if (!form.sellingPrice) newErrors.sellingPrice = "This field is required";
-
+    if (!form.name) newErrors.name = "Product name is required";
+    if (
+      !form.variants.length ||
+      !form.variants[0].size ||
+      !form.variants[0].price
+    )
+      newErrors.variants = "At least one valid variant is required";
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -70,22 +93,14 @@ export default function ProductsPage() {
       const res = await fetch("/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name,
-          company: form.company,
-          buyingPrice: Number(form.buyingPrice),
-          sellingPrice: Number(form.sellingPrice),
-          profit: form.profit ? Number(form.profit) : undefined,
-        }),
+        body: JSON.stringify(form),
       });
       const json = await res.json();
       if (json.success) {
         setForm({
           name: "",
-          company: "",
-          buyingPrice: "",
-          sellingPrice: "",
-          profit: "",
+          description: "",
+          variants: [{ size: "", price: "" }],
         });
         setProducts((prev) => [json.data, ...prev]);
         toast.success("Product added successfully!");
@@ -103,12 +118,8 @@ export default function ProductsPage() {
     try {
       const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
       const json = await res.json();
-      if (json.success) {
-        setProducts((prev) => prev.filter((p) => p._id !== id));
-        toast.success("Product deleted");
-      } else {
-        toast.error(json.error || "Delete failed");
-      }
+      if (json.success) setProducts((prev) => prev.filter((p) => p._id !== id));
+      else toast.error(json.error || "Delete failed");
     } catch {
       toast.error("Delete error");
     }
@@ -116,13 +127,7 @@ export default function ProductsPage() {
 
   function startEdit(p: ProductType) {
     setEditingId(p._id || null);
-    setEditValues({
-      name: p.name,
-      company: p.company,
-      buyingPrice: p.buyingPrice,
-      sellingPrice: p.sellingPrice,
-      profit: p.profit ?? "",
-    });
+    setEditValues({ ...p, variants: [...p.variants] });
   }
 
   function cancelEdit() {
@@ -136,253 +141,343 @@ export default function ProductsPage() {
       const res = await fetch(`/api/products/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: editValues.name,
-          company: editValues.company,
-          buyingPrice: Number(editValues.buyingPrice),
-          sellingPrice: Number(editValues.sellingPrice),
-          profit:
-            editValues.profit !== "" ? Number(editValues.profit) : undefined,
-        }),
+        body: JSON.stringify(editValues),
       });
       const json = await res.json();
       if (json.success) {
         setProducts((prev) => prev.map((p) => (p._id === id ? json.data : p)));
         cancelEdit();
         toast.success("Product updated!");
-      } else {
-        toast.error(json.error || "Update failed");
-      }
+      } else toast.error(json.error || "Update failed");
     } catch {
       toast.error("Update error");
     }
   }
 
-  const filtered = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.company.toLowerCase().includes(search.toLowerCase())
+  const filtered = products.filter((p) =>
+    p.name.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start py-12 px-4 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen flex flex-col items-center py-12 px-4 bg-gradient-to-b from-teal-50 via-white to-teal-100 dark:from-teal-900 dark:via-gray-950 dark:to-teal-900 text-gray-900 dark:text-gray-100">
       <Toaster position="top-right" />
       <motion.h1
-        className="text-3xl max-md:text-2xl self-center font-bold mb-6 text-yellow-600 dark:text-teal-500"
+        className="text-3xl font-bold mb-8 text-teal-600 dark:text-teal-400"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        📦 Manage Products
+        🧴 Manage Attars
       </motion.h1>
 
       {/* Form */}
-      <div className="w-full bg-gray-100 dark:bg-gray-900 rounded-2xl p-6 shadow mb-6">
-        <div className="grid sm:grid-cols-2 gap-4">
-          {["name", "company", "buyingPrice", "sellingPrice", "profit"].map(
-            (field) => (
-              <div key={field} className="flex flex-col">
-                <input
-                  name={field}
-                  type={
-                    field.includes("Price") || field === "profit"
-                      ? "number"
-                      : "text"
-                  }
-                  placeholder={
-                    field === "name"
-                      ? "Perfume Name"
-                      : field === "company"
-                      ? "Company"
-                      : field === "buyingPrice"
-                      ? "Buying Price / gram"
-                      : field === "sellingPrice"
-                      ? "Selling Price / gram"
-                      : "Profit / gram (optional)"
-                  }
-                  value={(form as any)[field]}
-                  onChange={handleChange}
-                  className={`p-3 rounded border ${
-                    errors[field]
-                      ? "border-red-500"
-                      : "border-gray-300 dark:border-gray-700"
-                  } bg-white dark:bg-gray-800`}
-                />
-                {errors[field] && (
-                  <span className="text-red-500 text-sm mt-1">
-                    {errors[field]}
-                  </span>
-                )}
-              </div>
-            )
+      <motion.div
+        className="w-full bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-lg mb-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="grid sm:grid-cols-2 gap-6">
+          <div className="flex flex-col">
+            <label
+              htmlFor="name"
+              className="mb-1 font-medium text-gray-700 dark:text-gray-300"
+            >
+              Product Name
+            </label>
+            <input
+              id="name"
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              placeholder="e.g., Oud Al Khaleeji"
+              className={`p-3 rounded-lg border ${
+                errors.name
+                  ? "border-red-500"
+                  : "border-gray-300 dark:border-gray-700"
+              } bg-gray-50 dark:bg-gray-900 transition`}
+            />
+            {errors.name && (
+              <span className="text-red-500 text-sm mt-1">{errors.name}</span>
+            )}
+          </div>
+
+          <div className="flex flex-col">
+            <label
+              htmlFor="description"
+              className="mb-1 font-medium text-gray-700 dark:text-gray-300"
+            >
+              Description (optional)
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              placeholder="Small description about the attar"
+              className="p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 transition"
+            />
+          </div>
+        </div>
+
+        {/* Variants */}
+        <div className="mt-4">
+          <label className="block font-semibold mb-2 text-gray-700 dark:text-gray-300">
+            Variants
+          </label>
+          {form.variants.map((variant, index) => (
+            <div
+              key={index}
+              className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2 w-full"
+            >
+              <input
+                type="text"
+                value={variant.size}
+                onChange={(e) =>
+                  handleVariantChange(index, "size", e.target.value)
+                }
+                placeholder="Size (e.g., 3ml)"
+                className="p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 w-full sm:w-32 transition"
+              />
+              <input
+                type="number"
+                value={variant.price}
+                onChange={(e) =>
+                  handleVariantChange(index, "price", e.target.value)
+                }
+                placeholder="Price"
+                className="p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 w-full sm:w-32 transition"
+              />
+              {form.variants.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeVariant(index)}
+                  className="text-red-500 hover:text-red-600 mt-1 sm:mt-0"
+                >
+                  <MinusCircle size={20} />
+                </button>
+              )}
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addVariant}
+            className="flex cursor-pointer items-center gap-2 mt-2 text-teal-500 hover:text-teal-600 transition"
+          >
+            <PlusCircle size={18} /> Add Variant
+          </button>
+          {errors.variants && (
+            <span className="text-red-500 text-sm">{errors.variants}</span>
           )}
         </div>
-        <div className="mt-4 flex gap-3">
+
+        <div className="mt-6 flex flex-wrap gap-3">
           <button
             onClick={handleAddProduct}
             disabled={loading}
-            className={`px-4 py-2 rounded text-white ${
+            className={`px-4 py-2 rounded-lg text-white ${
               loading
                 ? "bg-gray-400 cursor-not-allowed"
-                : "bg-yellow-600 cursor-pointer hover:bg-yellow-700 dark:bg-teal-500 dark:hover:bg-teal-600"
-            }`}
+                : "bg-teal-500 cursor-pointer hover:bg-teal-600"
+            } transition`}
           >
             {loading ? "Adding..." : "Add Product"}
           </button>
           <button
             onClick={fetchProducts}
-            className="px-4 py-2 border cursor-pointer rounded border-gray-300 dark:border-gray-700"
+            className="px-4 py-2 cursor-pointer border rounded-lg border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
           >
             Refresh
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Search */}
-      <div className="w-full mb-4 flex items-center gap-3">
-        <div className="flex-1 relative">
+      <div className="w-full mb-6">
+        <div className="relative">
+          <label htmlFor="search" className="sr-only">
+            Search Products
+          </label>
           <input
+            id="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name or company..."
-            className="w-full p-3 rounded-xl border dark:border-gray-700 bg-gray-100 dark:bg-gray-900 pr-12"
+            placeholder="Search by product name..."
+            className="w-full p-3 rounded-xl border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 pr-12 transition"
           />
           <Search className="absolute right-3 top-3 text-gray-400 dark:text-gray-500" />
         </div>
       </div>
 
-      {/* Table */}
-      <div className="w-full overflow-x-auto">
-        <table className="w-full bg-gray-100 dark:bg-gray-900 rounded-lg shadow border border-gray-300 dark:border-gray-700 divide-y divide-gray-300 dark:divide-gray-700">
-          <thead>
-            <tr className="bg-gray-200 dark:bg-gray-800 text-left">
-              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-yellow-600 dark:text-teal-400">
-                Name
-              </th>
-              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-yellow-600 dark:text-teal-400">
-                Company
-              </th>
-              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-yellow-600 dark:text-teal-400">
-                Buying / gram
-              </th>
-              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-yellow-600 dark:text-teal-400">
-                Selling / gram
-              </th>
-              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-yellow-600 dark:text-teal-400">
-                Profit / gram
-              </th>
-              <th className="p-3 min-w-[200px] text-center text-yellow-600 dark:text-teal-400">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={6} className="p-6 text-center text-gray-500">
-                  No products yet
-                </td>
-              </tr>
-            )}
+      {/* Product Cards with table-like layout and responsive scroll */}
+      <div className="w-full space-y-4">
+        {/* Table Header */}
+        <div className="grid grid-cols-[200px_1fr_120px] bg-yellow-100 dark:bg-yellow-900 text-black dark:text-white rounded-lg font-semibold text-center border border-gray-300 dark:border-gray-700 overflow-auto">
+          <div className="p-2 border-r border-gray-300 dark:border-gray-700">
+            Product Name
+          </div>
+          <div className="p-2 border-r border-gray-300 dark:border-gray-700 min-w-[200px]">
+            Variants & Prices
+          </div>
+          <div className="p-2">Actions</div>
+        </div>
 
-            {filtered.map((p) => {
-              const id = p._id as string;
-              const isEditing = editingId === id;
+        {filtered.length === 0 && (
+          <motion.div
+            className="p-6 text-center bg-white dark:bg-gray-800 rounded-2xl shadow"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            No products found
+          </motion.div>
+        )}
 
-              return (
-                <tr
-                  key={id}
-                  className="divide-x divide-gray-300 dark:divide-gray-700"
-                >
-                  {[
-                    "name",
-                    "company",
-                    "buyingPrice",
-                    "sellingPrice",
-                    "profit",
-                  ].map((field) => (
-                    <td key={field} className="p-3">
-                      {isEditing ? (
-                        <input
-                          type={
-                            field.includes("Price") || field === "profit"
-                              ? "number"
-                              : "text"
-                          }
-                          value={(editValues as any)?.[field] ?? ""}
-                          onChange={(e) =>
-                            setEditValues({
-                              ...editValues!,
-                              [field]: e.target.value,
-                            })
-                          }
-                          className="w-full p-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800"
-                        />
-                      ) : field === "buyingPrice" ||
-                        field === "sellingPrice" ? (
-                        `Rs ${p[field]}`
-                      ) : field === "profit" ? (
-                        p.profit ? (
-                          `Rs ${p.profit}`
-                        ) : (
-                          "—"
-                        )
-                      ) : (
-                        (p as any)[field]
-                      )}
-                    </td>
-                  ))}
-                  <td className="p-3 text-center flex items-center justify-center gap-1">
+        {filtered.map((p) => {
+          const id = p._id!;
+          const isEditing = editingId === id;
+
+          return (
+            <motion.div
+              key={id}
+              className="grid grid-cols-[200px_1fr_120px] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-300 dark:border-gray-700 overflow-auto"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.02 }}
+            >
+              {/* Product Name */}
+              <div className="flex items-center justify-center border-r border-gray-300 dark:border-gray-600 p-4 font-semibold text-teal-600 dark:text-teal-400 text-center">
+                {isEditing ? (
+                  <input
+                    value={editValues?.name ?? p.name ?? ""}
+                    onChange={(e) =>
+                      setEditValues((prev) => ({
+                        ...prev!,
+                        name: e.target.value,
+                        variants: prev?.variants ?? [],
+                      }))
+                    }
+                    className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+                  />
+                ) : (
+                  p.name
+                )}
+              </div>
+
+              {/* Variants & Prices with horizontal scroll */}
+              <div className="flex flex-col border-r border-gray-300 dark:border-gray-600 p-4 space-y-2 w-full">
+                {(isEditing
+                  ? editValues?.variants ?? []
+                  : p.variants ?? []
+                ).map((v, i) => (
+                  <motion.div
+                    key={i}
+                    className="flex min-w-[200px] border border-gray-300 dark:border-gray-700 rounded p-2 bg-gray-50 dark:bg-gray-900  justify-between items-center"
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                  >
                     {isEditing ? (
                       <>
-                        <motion.button
-                          whileHover={{ y: -2 }}
-                          onClick={() => saveEdit(id)}
-                          className="p-2 rounded cursor-pointer bg-green-500 text-white"
-                        >
-                          <Save size={16} />
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ y: -2 }}
-                          onClick={cancelEdit}
-                          className="p-2 rounded cursor-pointer bg-gray-300 dark:bg-gray-700"
-                        >
-                          <X size={16} />
-                        </motion.button>
+                        <input
+                          type="text"
+                          value={v.size ?? ""}
+                          placeholder="Size"
+                          onChange={(e) => {
+                            const updated = [...(editValues?.variants ?? [])];
+                            updated[i] = {
+                              ...updated[i],
+                              size: e.target.value,
+                            };
+                            setEditValues({
+                              _id: editValues?._id,
+                              name: editValues?.name ?? "",
+                              description: editValues?.description ?? "",
+                              variants: updated,
+                            });
+                          }}
+                          className="w-1/2 p-1 m-2 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+                        />
+                        <input
+                          type="number"
+                          value={v.price ?? ""}
+                          placeholder="Price"
+                          onChange={(e) => {
+                            const updated = [...(editValues?.variants ?? [])];
+                            updated[i] = {
+                              ...updated[i],
+                              price: Number(e.target.value),
+                            };
+                            setEditValues({
+                              _id: editValues?._id,
+                              name: editValues?.name ?? "",
+                              description: editValues?.description ?? "",
+                              variants: updated,
+                            });
+                          }}
+                          className="w-1/2 p-1 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+                        />
                       </>
                     ) : (
                       <>
-                        <motion.button
-                          whileHover={{ y: -2 }}
-                          onClick={() => startEdit(p)}
-                          className="p-2 rounded cursor-pointer bg-yellow-100 dark:bg-teal-600 text-yellow-600 dark:text-white"
-                        >
-                          <Edit size={16} />
-                        </motion.button>
-
-                        {/* ✅ Universal ConfirmDialog */}
-                        <ConfirmDialog
-                          trigger={
-                            <motion.button
-                              whileHover={{ y: -2 }}
-                              className="p-2 rounded bg-red-100 cursor-pointer text-red-600"
-                            >
-                              <Trash2 size={16} />
-                            </motion.button>
-                          }
-                          title="Delete Product?"
-                          description={`This will permanently delete "${p.name}". Are you sure?`}
-                          confirmText="Delete"
-                          cancelText="Cancel"
-                          onConfirm={() => handleDelete(id)}
-                        />
+                        <div className="text-gray-700 dark:text-gray-300 font-semibold">
+                          {v.size}
+                        </div>
+                        <div className="text-gray-500 dark:text-gray-400">
+                          Rs {v.price}
+                        </div>
                       </>
                     )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col justify-center items-center p-4 gap-2 overflow-auto">
+                {isEditing ? (
+                  <>
+                    <motion.button
+                      whileHover={{ y: -2 }}
+                      onClick={() => saveEdit(id)}
+                      className="p-2 cursor-pointer rounded bg-green-500 text-white"
+                    >
+                      <Save size={16} />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ y: -2 }}
+                      onClick={cancelEdit}
+                      className="p-2 rounded cursor-pointer bg-gray-300 dark:bg-gray-700"
+                    >
+                      <X size={16} />
+                    </motion.button>
+                  </>
+                ) : (
+                  <>
+                    <motion.button
+                      whileHover={{ y: -2 }}
+                      onClick={() => startEdit(p)}
+                      className="p-2 rounded cursor-pointer bg-teal-100 dark:bg-teal-600 text-teal-600 dark:text-white"
+                    >
+                      <Edit size={16} />
+                    </motion.button>
+                    <ConfirmDialog
+                      trigger={
+                        <motion.button
+                          whileHover={{ y: -2 }}
+                          className="p-2 rounded cursor-pointer bg-red-100 text-red-600"
+                        >
+                          <Trash2 size={16} />
+                        </motion.button>
+                      }
+                      title="Delete Product?"
+                      description={`This will permanently delete "${p.name}". Are you sure?`}
+                      confirmText="Delete"
+                      cancelText="Cancel"
+                      onConfirm={() => handleDelete(id)}
+                    />
+                  </>
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );

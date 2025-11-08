@@ -9,9 +9,8 @@ import ConfirmDialog from "@/components/ui/confirm-dialog";
 type OtherType = {
   _id?: string;
   name: string;
-  buyingPrice: number | string;
-  sellingPrice: number | string;
-  profit?: number | string;
+  description?: string;
+  price: number | string;
 };
 
 export default function OthersPage() {
@@ -20,9 +19,8 @@ export default function OthersPage() {
   const [search, setSearch] = useState("");
   const [form, setForm] = useState<OtherType>({
     name: "",
-    buyingPrice: "",
-    sellingPrice: "",
-    profit: "",
+    description: "",
+    price: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -45,16 +43,15 @@ export default function OthersPage() {
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setErrors({ ...errors, [e.target.name]: "" });
   };
 
   async function handleAdd() {
-    let newErrors: Record<string, string> = {};
+    const newErrors: Record<string, string> = {};
     if (!form.name) newErrors.name = "This field is required";
-    if (!form.buyingPrice) newErrors.buyingPrice = "This field is required";
-    if (!form.sellingPrice) newErrors.sellingPrice = "This field is required";
+    if (!form.price) newErrors.price = "This field is required";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -68,14 +65,13 @@ export default function OthersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name,
-          buyingPrice: Number(form.buyingPrice),
-          sellingPrice: Number(form.sellingPrice),
-          profit: form.profit ? Number(form.profit) : undefined,
+          description: form.description,
+          price: Number(form.price),
         }),
       });
       const json = await res.json();
       if (json.success) {
-        setForm({ name: "", buyingPrice: "", sellingPrice: "", profit: "" });
+        setForm({ name: "", description: "", price: "" });
         setItems((prev) => [json.data, ...prev]);
         toast.success("Item added!");
       } else {
@@ -107,9 +103,8 @@ export default function OthersPage() {
     setEditingId(p._id || null);
     setEditValues({
       name: p.name,
-      buyingPrice: p.buyingPrice,
-      sellingPrice: p.sellingPrice,
-      profit: p.profit ?? "",
+      description: p.description,
+      price: p.price,
     });
   }
 
@@ -126,10 +121,8 @@ export default function OthersPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: editValues.name,
-          buyingPrice: Number(editValues.buyingPrice),
-          sellingPrice: Number(editValues.sellingPrice),
-          profit:
-            editValues.profit !== "" ? Number(editValues.profit) : undefined,
+          description: editValues.description,
+          price: Number(editValues.price),
         }),
       });
       const json = await res.json();
@@ -137,9 +130,7 @@ export default function OthersPage() {
         setItems((prev) => prev.map((p) => (p._id === id ? json.data : p)));
         cancelEdit();
         toast.success("Item updated!");
-      } else {
-        toast.error(json.error || "Update failed");
-      }
+      } else toast.error(json.error || "Update failed");
     } catch {
       toast.error("Update error");
     }
@@ -150,10 +141,10 @@ export default function OthersPage() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start p-4 bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen flex flex-col items-center p-4 bg-gradient-to-b from-teal-50 via-white to-teal-100 dark:from-teal-900 dark:via-gray-950 dark:to-teal-900 text-gray-900 dark:text-gray-100">
       <Toaster position="top-right" />
       <motion.h1
-        className="text-3xl max-md:text-2xl self-center font-bold mb-6 text-yellow-600 dark:text-teal-400"
+        className="text-3xl max-md:text-2xl font-bold mb-6 text-teal-600 dark:text-teal-400"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -161,57 +152,59 @@ export default function OthersPage() {
       </motion.h1>
 
       {/* Form */}
-      <div className="w-full bg-gray-100 dark:bg-gray-900 rounded-2xl p-6 shadow mb-6">
+      <div className="w-full bg-white dark:bg-gray-800 rounded-3xl p-6 shadow mb-6">
         <div className="grid sm:grid-cols-2 gap-4">
-          {["name", "buyingPrice", "sellingPrice", "profit"].map((field) => (
-            <div key={field} className="flex flex-col">
-              <input
-                name={field}
-                type={
-                  field.includes("Price") || field === "profit"
-                    ? "number"
-                    : "text"
-                }
-                placeholder={
-                  field === "name"
-                    ? "Product Name"
-                    : field === "buyingPrice"
-                    ? "Buying Price"
-                    : field === "sellingPrice"
-                    ? "Selling Price"
-                    : "Profit (optional)"
-                }
-                value={(form as any)[field]}
-                onChange={handleChange}
-                className={`p-3 rounded border ${
-                  errors[field]
-                    ? "border-red-500"
-                    : "border-gray-300 dark:border-gray-700"
-                } bg-white dark:bg-gray-800`}
-              />
-              {errors[field] && (
-                <span className="text-red-500 text-sm mt-1">
-                  {errors[field]}
-                </span>
-              )}
-            </div>
-          ))}
+          <div className="flex flex-col">
+            <input
+              name="name"
+              placeholder="Item Name"
+              value={form.name}
+              onChange={handleChange}
+              className={`p-3 rounded-lg border ${
+                errors.name ? "border-red-500" : "border-gray-300 dark:border-gray-700"
+              } bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 transition`}
+            />
+            {errors.name && <span className="text-red-500 text-sm mt-1">{errors.name}</span>}
+          </div>
+          <div className="flex flex-col">
+            <input
+              name="price"
+              type="number"
+              placeholder="Price"
+              value={form.price}
+              onChange={handleChange}
+              className={`p-3 rounded-lg border ${
+                errors.price ? "border-red-500" : "border-gray-300 dark:border-gray-700"
+              } bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 transition`}
+            />
+            {errors.price && <span className="text-red-500 text-sm mt-1">{errors.price}</span>}
+          </div>
+          <div className="flex flex-col sm:col-span-2">
+            <textarea
+              name="description"
+              placeholder="Description (optional)"
+              value={form.description}
+              onChange={handleChange}
+              className="p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 transition w-full"
+            />
+          </div>
         </div>
+
         <div className="mt-4 flex gap-3">
           <button
             onClick={handleAdd}
             disabled={loading}
-            className={`px-4 py-2 rounded text-white ${
+            className={`px-4 py-2 rounded-lg text-white ${
               loading
                 ? "bg-gray-400 cursor-not-allowed"
-                : "bg-yellow-600 cursor-pointer hover:bg-yellow-700 dark:bg-teal-500 dark:hover:bg-teal-600"
-            }`}
+                : "bg-teal-500 cursor-pointer hover:bg-teal-600 dark:bg-teal-600 dark:hover:bg-teal-700"
+            } transition`}
           >
-            {loading ? "Adding..." : "Add Product"}
+            {loading ? "Adding..." : "Add Item"}
           </button>
           <button
             onClick={fetchItems}
-            className="px-4 py-2 border cursor-pointer rounded border-gray-300 dark:border-gray-700"
+            className="px-4 py-2 cursor-pointer border rounded-lg border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
           >
             Refresh
           </button>
@@ -225,7 +218,7 @@ export default function OthersPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name..."
-            className="w-full p-3 rounded-xl border dark:border-gray-700 bg-gray-100 dark:bg-gray-900 pr-12"
+            className="w-full p-3 rounded-xl border dark:border-gray-700 bg-gray-50 dark:bg-gray-900 pr-12 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
           />
           <Search className="absolute right-3 top-3 text-gray-400 dark:text-gray-500" />
         </div>
@@ -233,22 +226,19 @@ export default function OthersPage() {
 
       {/* Table */}
       <div className="w-full overflow-x-auto">
-        <table className="w-full bg-gray-100 dark:bg-gray-900 rounded-lg shadow border border-gray-300 dark:border-gray-700 divide-y divide-gray-300 dark:divide-gray-700">
+        <table className="w-full bg-white dark:bg-gray-800 rounded-2xl shadow border border-gray-300 dark:border-gray-700 divide-y divide-gray-300 dark:divide-gray-700">
           <thead>
-            <tr className="bg-gray-200 dark:bg-gray-800 text-left">
-              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-yellow-600 dark:text-teal-400">
+            <tr className="bg-teal-100 dark:bg-teal-800 text-left">
+              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-teal-600 dark:text-teal-400">
                 Name
               </th>
-              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-yellow-600 dark:text-teal-400">
-                Buying
+              <th className="p-3 min-w-[250px] border-r border-gray-300 dark:border-gray-700 text-teal-600 dark:text-teal-400">
+                Description
               </th>
-              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-yellow-600 dark:text-teal-400">
-                Selling
+              <th className="p-3 min-w-[150px] border-r border-gray-300 dark:border-gray-700 text-teal-600 dark:text-teal-400">
+                Price
               </th>
-              <th className="p-3 min-w-[200px] border-r border-gray-300 dark:border-gray-700 text-yellow-600 dark:text-teal-400">
-                Profit
-              </th>
-              <th className="p-3 min-w-[200px] text-center text-yellow-600 dark:text-teal-400">
+              <th className="p-3 min-w-[150px] text-center text-teal-600 dark:text-teal-400">
                 Actions
               </th>
             </tr>
@@ -256,7 +246,7 @@ export default function OthersPage() {
           <tbody>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-6 text-center text-gray-500">
+                <td colSpan={4} className="p-6 text-center text-gray-500">
                   No items yet
                 </td>
               </tr>
@@ -267,58 +257,69 @@ export default function OthersPage() {
               const isEditing = editingId === id;
 
               return (
-                <tr
-                  key={id}
-                  className="divide-x divide-gray-300 dark:divide-gray-700"
-                >
-                  {["name", "buyingPrice", "sellingPrice", "profit"].map(
-                    (field) => (
-                      <td key={field} className="p-3">
-                        {isEditing ? (
-                          <input
-                            type={
-                              field.includes("Price") || field === "profit"
-                                ? "number"
-                                : "text"
-                            }
-                            value={(editValues as any)?.[field] ?? ""}
-                            onChange={(e) =>
-                              setEditValues({
-                                ...editValues!,
-                                [field]: e.target.value,
-                              })
-                            }
-                            className="w-full p-2 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800"
-                          />
-                        ) : field === "buyingPrice" ||
-                          field === "sellingPrice" ? (
-                          `Rs ${p[field]}`
-                        ) : field === "profit" ? (
-                          p.profit ? (
-                            `Rs ${p.profit}`
-                          ) : (
-                            "—"
-                          )
-                        ) : (
-                          (p as any)[field]
-                        )}
-                      </td>
-                    )
-                  )}
+                <tr key={id} className="divide-x divide-gray-300 dark:divide-gray-700">
+                  {/* Name */}
+                  <td className="p-3">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editValues?.name ?? ""}
+                        onChange={(e) =>
+                          setEditValues({ ...editValues!, name: e.target.value })
+                        }
+                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
+                      />
+                    ) : (
+                      p.name
+                    )}
+                  </td>
+
+                  {/* Description */}
+                  <td className="p-3">
+                    {isEditing ? (
+                      <textarea
+                        value={editValues?.description ?? ""}
+                        onChange={(e) =>
+                          setEditValues({ ...editValues!, description: e.target.value })
+                        }
+                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
+                      />
+                    ) : (
+                      p.description || "—"
+                    )}
+                  </td>
+
+                  {/* Price */}
+                  <td className="p-3">
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        value={editValues?.price ?? ""}
+                        onChange={(e) =>
+                          setEditValues({ ...editValues!, price: e.target.value })
+                        }
+                        className="w-full p-2 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
+                      />
+                    ) : (
+                      `Rs ${p.price}`
+                    )}
+                  </td>
+
+                  {/* Actions */}
                   <td className="p-3 text-center flex items-center justify-center gap-1">
                     {isEditing ? (
                       <>
                         <motion.button
                           whileHover={{ y: -2 }}
                           onClick={() => saveEdit(id)}
-                          className="p-2 rounded cursor-pointer bg-green-500 text-white"
+                          className="p-2 rounded cursor-pointer bg-green-500 text-white transition"
                         >
                           <Save size={16} />
                         </motion.button>
                         <motion.button
                           whileHover={{ y: -2 }}
                           onClick={cancelEdit}
-                          className="p-2 rounded cursor-pointer bg-gray-300 dark:bg-gray-700"
+                          className="p-2 rounded cursor-pointer bg-gray-300 dark:bg-gray-700 transition"
                         >
                           <X size={16} />
                         </motion.button>
@@ -328,7 +329,7 @@ export default function OthersPage() {
                         <motion.button
                           whileHover={{ y: -2 }}
                           onClick={() => startEdit(p)}
-                          className="p-2 rounded cursor-pointer bg-purple-100 dark:bg-teal-600 text-yellow-600 dark:text-white"
+                          className="p-2 rounded bg-teal-100 cursor-pointer dark:bg-teal-600 text-teal-600 dark:text-white transition"
                         >
                           <Edit size={16} />
                         </motion.button>
@@ -336,12 +337,12 @@ export default function OthersPage() {
                           trigger={
                             <motion.button
                               whileHover={{ y: -2 }}
-                              className="p-2 rounded bg-red-100 cursor-pointer text-red-600"
+                              className="p-2 rounded cursor-pointer bg-red-100 text-red-600 transition"
                             >
                               <Trash2 size={16} />
                             </motion.button>
                           }
-                          title="Delete Product?"
+                          title="Delete Item?"
                           description={`This will permanently delete "${p.name}". Are you sure?`}
                           confirmText="Delete"
                           cancelText="Cancel"

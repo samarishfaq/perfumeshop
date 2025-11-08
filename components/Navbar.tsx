@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Moon, Sun, Menu, X } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "./ui/button";
+import Image from "next/image";
 
 const Navbar = () => {
   const { theme, setTheme } = useTheme();
@@ -17,18 +18,21 @@ const Navbar = () => {
   const links = ["Home", "Products", "Orders", "Others"];
 
   return (
-    <nav className="w-full sticky top-0 z-50 shadow-lg transition-all duration-500">
+    <nav className="w-full sticky top-0 z-50 shadow-md transition-all duration-500">
       {/* Animated Background */}
-      <div className="absolute inset-0 bg-gradient-to-r from-yellow-50 via-white to-yellow-100 dark:from-gray-900 dark:via-gray-800 dark:to-black animate-gradient bg-size-200" />
+      <div className="absolute inset-0 bg-gradient-to-r from-teal-50 via-white to-teal-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-950 animate-gradient bg-size-200 rounded-b-lg" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           {/* Logo */}
-          <Link
-            href="/"
-            className="text-2xl font-extrabold tracking-wide text-yellow-600 dark:text-teal-400 drop-shadow-sm"
-          >
-            PerfumeShop
+          <Link href="/" className="flex items-center">
+            <Image
+              src="/elevated-logo.png"
+              alt="PerfumeShop Logo"
+              width={112}
+              height={112}
+              className="mr-2 dark:invert"
+            />
           </Link>
 
           {/* Desktop Links */}
@@ -40,7 +44,7 @@ const Navbar = () => {
                 className="relative group transition-all duration-300"
               >
                 {item}
-                <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-yellow-600 dark:bg-teal-400 transition-all duration-300 ease-in-out group-hover:w-full group-hover:shadow-[0_0_8px] group-hover:shadow-yellow-600 dark:group-hover:shadow-teal-400"></span>
+                <span className="absolute left-0 -bottom-1 w-0 h-[2px] bg-teal-600 dark:bg-teal-400 transition-all duration-300 ease-in-out group-hover:w-full group-hover:shadow-[0_0_8px] group-hover:shadow-teal-400"></span>
               </Link>
             ))}
           </div>
@@ -52,22 +56,22 @@ const Navbar = () => {
               variant="outline"
               size="icon"
               onClick={toggleTheme}
-              className="relative overflow-hidden border-yellow-600 dark:border-teal-400 hover:bg-yellow-200 dark:hover:bg-teal-900/40 transition-all duration-500 rounded-full"
+              className="relative overflow-hidden border-teal-600 dark:border-teal-400 hover:bg-teal-200 dark:hover:bg-teal-900/40 transition-all duration-500 rounded-full"
             >
-              <Sun className="h-[1.3rem] w-[1.3rem] rotate-0 scale-100 transition-all text-yellow-600 dark:text-gray-400 dark:scale-0 dark:-rotate-90" />
+              <Sun className="h-[1.3rem] w-[1.3rem] rotate-0 scale-100 transition-all text-teal-600 dark:text-gray-400 dark:scale-0 dark:-rotate-90" />
               <Moon className="absolute h-[1.3rem] w-[1.3rem] rotate-90 scale-0 transition-all text-gray-600 dark:text-teal-400 dark:scale-100 dark:rotate-0" />
               <span className="sr-only">Toggle theme</span>
             </Button>
 
             {/* Hamburger for mobile */}
             <button
-              className="md:hidden p-2 rounded-md hover:bg-yellow-200 dark:hover:bg-teal-900/40 transition"
+              className="md:hidden p-2 rounded-md hover:bg-teal-200 dark:hover:bg-teal-900/40 transition"
               onClick={() => setIsOpen(!isOpen)}
             >
               {isOpen ? (
-                <X size={26} className="text-yellow-600 dark:text-teal-400 transition-all" />
+                <X size={26} className="text-teal-600 dark:text-teal-400 transition-all" />
               ) : (
-                <Menu size={26} className="text-yellow-600 dark:text-teal-400 transition-all" />
+                <Menu size={26} className="text-teal-600 dark:text-teal-400 transition-all" />
               )}
             </button>
           </div>
@@ -86,7 +90,7 @@ const Navbar = () => {
               key={i}
               href={`/${item === "Home" ? "" : item.toLowerCase()}`}
               onClick={() => setIsOpen(false)}
-              className="block w-full font-medium transition-all hover:text-yellow-600 dark:hover:text-teal-400"
+              className="block w-full font-medium transition-all hover:text-teal-600 dark:hover:text-teal-400"
             >
               {item}
             </Link>
@@ -98,4 +102,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-

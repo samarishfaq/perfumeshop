@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/mongoose";
+import dbConnect from "@/lib/mongoose";
 import Order from "@/models/Order";
 
 // ✅ GET all orders
 export async function GET() {
   try {
-    await connectToDatabase();
+    await dbConnect();
     const orders = await Order.find().sort({ createdAt: -1 });
     return NextResponse.json(orders, { status: 200 });
   } catch (error) {
@@ -19,7 +19,7 @@ export async function GET() {
 // ✅ POST create order
 export async function POST(req: Request) {
   try {
-    await connectToDatabase();
+    await dbConnect();
     const body = await req.json();
 
     const newOrder = await Order.create(body);
