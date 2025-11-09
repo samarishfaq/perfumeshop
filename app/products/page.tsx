@@ -10,9 +10,14 @@ import {
   X,
   PlusCircle,
   MinusCircle,
+  Printer,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
+
+// ✅ PDF libraries
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable"; // 👈 Proper import
 
 type VariantType = { size: string; price: number | string };
 type ProductType = {
@@ -158,6 +163,76 @@ export default function ProductsPage() {
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  const generatePDF = () => {
+    try {
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "a4",
+      });
+
+      // Header
+      doc.setFontSize(16);
+      doc.text("Elevated Creations — Price List", 40, 40);
+      doc.setFontSize(10);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 40, 55);
+
+      let y = 80; // Starting vertical position
+
+      filtered.forEach((product, index) => {
+        // Product header (number + name)
+        doc.setFontSize(12);
+        doc.setTextColor(22, 160, 133);
+        doc.text(`${index + 1}. ${product.name}`, 40, y);
+
+        y += 8; // Small spacing
+
+        // Variants table box for each product
+        const variantData =
+          product.variants.length > 0
+            ? product.variants.map((v) => [v.size, `Rs ${v.price}`])
+            : [["-", "-"]];
+
+        autoTable(doc, {
+          head: [["Size", "Price"]],
+          body: variantData,
+          startY: y + 5,
+          styles: { fontSize: 9, cellPadding: 5 },
+          theme: "grid",
+          headStyles: {
+            fillColor: [22, 160, 133],
+            textColor: 255,
+            fontStyle: "bold",
+          },
+          margin: { left: 60, right: 60 },
+        });
+
+        // Get where the last table ended
+        const tableY = (doc as any).lastAutoTable.finalY;
+
+        // Draw dark border line after each product section
+        doc.setDrawColor(30, 30, 30);
+        doc.setLineWidth(0.7);
+        doc.line(40, tableY + 10, 550, tableY + 10);
+
+        // Move down for next product
+        y = tableY + 25;
+
+        // Add new page if near the bottom
+        if (y > 740) {
+          doc.addPage();
+          y = 60;
+        }
+      });
+
+      doc.save("Elevated-Creations-Price-List.pdf");
+      toast.success("PDF generated successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate PDF");
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center py-12 px-4 bg-gradient-to-b from-teal-50 via-white to-teal-100 dark:from-teal-900 dark:via-gray-950 dark:to-teal-900 text-gray-900 dark:text-gray-100">
       <Toaster position="top-right" />
@@ -177,10 +252,7 @@ export default function ProductsPage() {
       >
         <div className="grid sm:grid-cols-2 gap-6">
           <div className="flex flex-col">
-            <label
-              htmlFor="name"
-              className="mb-1 font-medium text-gray-700 dark:text-gray-300"
-            >
+            <label className="mb-1 font-medium text-gray-700 dark:text-gray-300">
               Product Name
             </label>
             <input
@@ -201,10 +273,7 @@ export default function ProductsPage() {
           </div>
 
           <div className="flex flex-col">
-            <label
-              htmlFor="description"
-              className="mb-1 font-medium text-gray-700 dark:text-gray-300"
-            >
+            <label className="mb-1 font-medium text-gray-700 dark:text-gray-300">
               Description (optional)
             </label>
             <textarea
@@ -290,12 +359,19 @@ export default function ProductsPage() {
         </div>
       </motion.div>
 
+      {/* Add PDF Download Button */}
+      <div className="mb-6 flex gap-3">
+        <button
+          onClick={generatePDF}
+          className="flex cursor-pointer items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white hover:bg-teal-700 transition"
+        >
+          <Printer size={18} /> Download Price List (PDF)
+        </button>
+      </div>
+
       {/* Search */}
       <div className="w-full mb-6">
         <div className="relative">
-          <label htmlFor="search" className="sr-only">
-            Search Products
-          </label>
           <input
             id="search"
             value={search}
