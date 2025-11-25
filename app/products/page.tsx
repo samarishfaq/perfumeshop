@@ -40,6 +40,9 @@ export default function ProductsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<ProductType | null>(null);
 
+  // View mode: "all" | "attar" | "perfume"
+  const [viewMode, setViewMode] = useState<"all" | "attar" | "perfume">("all");
+
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -159,11 +162,62 @@ export default function ProductsPage() {
     }
   }
 
+  // ---------- PERFUME CALCULATION UTIL ----------
+  function calculatePerfumePrices(variants: VariantType[] | undefined) {
+    if (!variants || !variants.length) return null;
+
+    // normalize sizes: trim and lowercase
+    const getPrice = (sizeKey: string) => {
+      const found = variants.find(
+        (v) => String(v.size).trim().toLowerCase() === sizeKey.toLowerCase()
+      );
+      // Coerce numeric
+      if (!found) return null;
+      const n = Number(found.price);
+      return isNaN(n) ? null : n;
+    };
+
+    const price3 = getPrice("3ml");
+    const price12 = getPrice("12ml ( Tola )");
+
+    // Use 12ml as base for most formulas
+    const result: Record<string, number | null> = {
+      "5ml": null,
+      "15ml": null,
+      "30ml": null,
+      "50ml": null,
+      "100ml": null,
+    };
+
+    // 5ml uses 3ml attar per your instruction:
+    // 5ml = (3ml_price / 3) * 5  (if 3ml exists)
+    if (price3 != null) {
+      const val = price3;
+      result["5ml"] = Math.round(val);
+    }
+
+    if (price12 != null) {
+      const perMl = price12 / 12;
+      // 15ml => perMl * 5 + 350  (your specified formula)
+      result["15ml"] = Math.round(perMl * 5 + 350);
+      // 30ml => perMl * 10 + 350
+      result["30ml"] = Math.round(perMl * 10 + 350);
+      // 50ml => perMl * 20 + 550
+      result["50ml"] = Math.round(perMl * 20 + 550);
+      // 100ml => perMl * 40 + 650
+      result["100ml"] = Math.round(perMl * 40 + 650);
+    }
+
+    return result;
+  }
+  // ---------- END UTIL ----------
+
   const filtered = products.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const generatePDF = () => {
+  // ---------- ATTAR PDF ----------
+  const generateAttarPDF = () => {
     try {
       const doc = new jsPDF({
         orientation: "portrait",
@@ -171,13 +225,16 @@ export default function ProductsPage() {
         format: "a4",
       });
 
-      // Header
       doc.setFontSize(16);
-      doc.text("Islamic Scentiments — Price List", 40, 40);
+      doc.text("Islamic Scentiments — Attar Price List", 40, 40);
       doc.setFontSize(10);
       doc.text(`Generated: ${new Date().toLocaleString()}`, 40, 55);
 
-      let y = 80; // Starting vertical position
+      // Fancy bottle note for Attar PDF
+      doc.setFontSize(11);
+      doc.text("Note: Fancy bottles cost extra (Rs 200 - 350).", 40, 75);
+
+      let y = 100;
 
       filtered.forEach((product, index) => {
         // Product header (number + name)
@@ -187,10 +244,9 @@ export default function ProductsPage() {
 
         y += 8; // Small spacing
 
-        // Variants table box for each product
         const variantData =
-          product.variants.length > 0
-            ? product.variants.map((v) => [v.size, `Rs ${v.price}`])
+          product.variants && product.variants.length > 0
+            ? product.variants.map((v) => [String(v.size), `Rs ${v.price}`])
             : [["-", "-"]];
 
         autoTable(doc, {
@@ -207,7 +263,6 @@ export default function ProductsPage() {
           margin: { left: 60, right: 60 },
         });
 
-        // Get where the last table ended
         const tableY = (doc as any).lastAutoTable.finalY;
 
         // Draw dark border line after each product section
@@ -215,34 +270,155 @@ export default function ProductsPage() {
         doc.setLineWidth(0.7);
         doc.line(40, tableY + 10, 550, tableY + 10);
 
-        // Move down for next product
         y = tableY + 25;
-
-        // Add new page if near the bottom
         if (y > 740) {
           doc.addPage();
           y = 60;
         }
       });
 
-      doc.save("Islamic-Scentiments-Price-List.pdf");
-      toast.success("PDF generated successfully!");
+      doc.save("Islamic-Scentiments-Attar-Price-List.pdf");
+      toast.success("Attar PDF generated successfully!");
     } catch (err) {
       console.error(err);
-      toast.error("Failed to generate PDF");
+      toast.error("Failed to generate Attar PDF");
     }
   };
+
+  // ---------- PERFUME PDF ----------
+  const generatePerfumePDF = () => {
+    try {
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "a4",
+      });
+
+      doc.setFontSize(16);
+      doc.text("Islamic Scentiments — Perfume Price List", 40, 40);
+      doc.setFontSize(10);
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 40, 55);
+
+      // Top notes for perfume PDF
+      doc.setFontSize(11);
+      doc.text("Magnetic Box Charge Extra ( If You Need ): Rs 450", 40, 75);
+      doc.text("Fancy Perfume Bottle Charge Extra ( If You Need ): Rs 450 ", 40, 90);
+
+      let y = 110;
+
+      // Only include products that have any perfume price computed
+      filtered.forEach((product, index) => {
+        const perfume = calculatePerfumePrices(product.variants);
+        if (!perfume) return;
+
+        // check if at least one perfume value exists (non-null)
+        const anyAvailable = Object.values(perfume).some((v) => v !== null);
+        if (!anyAvailable) return;
+
+        doc.setFontSize(12);
+        doc.setTextColor(22, 160, 133);
+        doc.text(`${index + 1}. ${product.name}`, 40, y);
+
+        y += 8;
+
+        const rows: string[][] = [];
+        (["5ml", "15ml", "30ml", "50ml", "100ml"] as const).forEach((ml) => {
+          const price = perfume[ml];
+          rows.push([ml, price != null ? `Rs ${price}` : "-"]);
+        });
+
+        autoTable(doc, {
+          head: [["Perfume Size", "Price"]],
+          body: rows,
+          startY: y + 5,
+          styles: { fontSize: 9, cellPadding: 5 },
+          theme: "grid",
+          headStyles: {
+            fillColor: [99, 102, 241],
+            textColor: 255,
+            fontStyle: "bold",
+          },
+          margin: { left: 60, right: 60 },
+        });
+
+        const tableY = (doc as any).lastAutoTable.finalY;
+
+        doc.setDrawColor(30, 30, 30);
+        doc.setLineWidth(0.7);
+        doc.line(40, tableY + 10, 550, tableY + 10);
+
+        y = tableY + 25;
+        if (y > 740) {
+          doc.addPage();
+          y = 60;
+        }
+      });
+
+      doc.save("Islamic-Scentiments-Perfume-Price-List.pdf");
+      toast.success("Perfume PDF generated successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate Perfume PDF");
+    }
+  };
+  // ---------- END PDFs ----------
+
+  // Filter products by viewMode: show product if
+  const displayedProducts = filtered.filter((p) => {
+    if (viewMode === "all") return true;
+    if (viewMode === "attar") return true; // attar always shown as it's the base data
+    if (viewMode === "perfume") {
+      const perfume = calculatePerfumePrices(p.variants);
+      if (!perfume) return false;
+      return Object.values(perfume).some((v) => v !== null);
+    }
+    return true;
+  });
 
   return (
     <div className="min-h-screen flex flex-col items-center py-12 px-4 bg-gradient-to-b from-teal-50 via-white to-teal-100 dark:from-teal-900 dark:via-gray-950 dark:to-teal-900 text-gray-900 dark:text-gray-100">
       <Toaster position="top-right" />
       <motion.h1
-        className="text-3xl font-bold mb-8 text-teal-600 dark:text-teal-400"
+        className="text-3xl font-bold mb-4 text-teal-600 dark:text-teal-400"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        🧴 Manage Attars
+        🧴 Manage Attars & Perfumes
       </motion.h1>
+
+      {/* Tabs */}
+      <div className=" mb-6 flex gap-3">
+        <button
+          onClick={() => setViewMode("all")}
+          className={`px-4 py-2 cursor-pointer rounded-lg font-medium ${
+            viewMode === "all"
+              ? "bg-teal-600 text-white"
+              : "bg-white dark:bg-gray-800 border dark:border-gray-700"
+          }`}
+        >
+          All
+        </button>
+        <button
+          onClick={() => setViewMode("attar")}
+          className={`px-4 py-2 cursor-pointer rounded-lg font-medium ${
+            viewMode === "attar"
+              ? "bg-teal-600 text-white"
+              : "bg-white dark:bg-gray-800 border dark:border-gray-700"
+          }`}
+        >
+          Attar
+        </button>
+        <button
+          onClick={() => setViewMode("perfume")}
+          className={`px-4 py-2 cursor-pointer rounded-lg font-medium ${
+            viewMode === "perfume"
+              ? "bg-teal-600 text-white"
+              : "bg-white dark:bg-gray-800 border dark:border-gray-700"
+          }`}
+        >
+          Perfume
+        </button>
+      </div>
 
       {/* Form */}
       <motion.div
@@ -290,7 +466,7 @@ export default function ProductsPage() {
         {/* Variants */}
         <div className="mt-4">
           <label className="block font-semibold mb-2 text-gray-700 dark:text-gray-300">
-            Variants
+            Variants (Attar) — use sizes like "2ml", "3ml", "6ml", "12ml"
           </label>
           {form.variants.map((variant, index) => (
             <div
@@ -319,7 +495,7 @@ export default function ProductsPage() {
                 <button
                   type="button"
                   onClick={() => removeVariant(index)}
-                  className="text-red-500 hover:text-red-600 mt-1 sm:mt-0"
+                  className="text-red-500 cursor-pointer hover:text-red-600 mt-1 sm:mt-0"
                 >
                   <MinusCircle size={20} />
                 </button>
@@ -359,13 +535,20 @@ export default function ProductsPage() {
         </div>
       </motion.div>
 
-      {/* Add PDF Download Button */}
-      <div className="mb-6 flex gap-3">
+      {/* PDF Buttons */}
+      <div className="mb-6 flex gap-3 w-full">
         <button
-          onClick={generatePDF}
+          onClick={generateAttarPDF}
           className="flex cursor-pointer items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white hover:bg-teal-700 transition"
         >
-          <Printer size={18} /> Download Price List (PDF)
+          <Printer size={18} /> Download Attar Price List (PDF)
+        </button>
+
+        <button
+          onClick={generatePerfumePDF}
+          className="flex cursor-pointer items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition"
+        >
+          <Printer size={18} /> Download Perfume Price List (PDF)
         </button>
       </div>
 
@@ -396,7 +579,7 @@ export default function ProductsPage() {
           <div className="p-2">Actions</div>
         </div>
 
-        {filtered.length === 0 && (
+        {displayedProducts.length === 0 && (
           <motion.div
             className="p-6 text-center bg-white dark:bg-gray-800 rounded-2xl shadow"
             initial={{ opacity: 0 }}
@@ -406,9 +589,10 @@ export default function ProductsPage() {
           </motion.div>
         )}
 
-        {filtered.map((p) => {
+        {displayedProducts.map((p, idx) => {
           const id = p._id!;
           const isEditing = editingId === id;
+          const perfumePrices = calculatePerfumePrices(p.variants);
 
           return (
             <motion.div
@@ -433,76 +617,128 @@ export default function ProductsPage() {
                     className="w-full p-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
                   />
                 ) : (
-                  p.name
+                  <div className="text-sm">{p.name}</div>
                 )}
               </div>
 
               {/* Variants & Prices with horizontal scroll */}
               <div className="flex flex-col border-r border-gray-300 dark:border-gray-600 p-4 space-y-2 w-full">
-                {(isEditing
-                  ? editValues?.variants ?? []
-                  : p.variants ?? []
-                ).map((v, i) => (
-                  <motion.div
-                    key={i}
-                    className="flex min-w-[200px] border border-gray-300 dark:border-gray-700 rounded p-2 bg-gray-50 dark:bg-gray-900  justify-between items-center"
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                  >
-                    {isEditing ? (
-                      <>
-                        <input
-                          type="text"
-                          value={v.size ?? ""}
-                          placeholder="Size"
-                          onChange={(e) => {
-                            const updated = [...(editValues?.variants ?? [])];
-                            updated[i] = {
-                              ...updated[i],
-                              size: e.target.value,
-                            };
-                            setEditValues({
-                              _id: editValues?._id,
-                              name: editValues?.name ?? "",
-                              description: editValues?.description ?? "",
-                              variants: updated,
-                            });
-                          }}
-                          className="w-1/2 p-1 m-2 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
-                        />
-                        <input
-                          type="number"
-                          value={v.price ?? ""}
-                          placeholder="Price"
-                          onChange={(e) => {
-                            const updated = [...(editValues?.variants ?? [])];
-                            updated[i] = {
-                              ...updated[i],
-                              price: Number(e.target.value),
-                            };
-                            setEditValues({
-                              _id: editValues?._id,
-                              name: editValues?.name ?? "",
-                              description: editValues?.description ?? "",
-                              variants: updated,
-                            });
-                          }}
-                          className="w-1/2 p-1 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <div className="text-gray-700 dark:text-gray-300 font-semibold">
-                          {v.size}
+                {/* Attar variants (editable when editing) */}
+                {(isEditing ? editValues?.variants ?? [] : p.variants ?? []).map(
+                  (v, i) => (
+                    <motion.div
+                      key={i}
+                      className="flex min-w-[200px] border border-gray-300 dark:border-gray-700 rounded p-2 bg-gray-50 dark:bg-gray-900  justify-between items-center"
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                    >
+                      {isEditing ? (
+                        <>
+                          <input
+                            type="text"
+                            value={v.size ?? ""}
+                            placeholder="Size"
+                            onChange={(e) => {
+                              const updated = [...(editValues?.variants ?? [])];
+                              updated[i] = {
+                                ...updated[i],
+                                size: e.target.value,
+                              };
+                              setEditValues({
+                                _id: editValues?._id,
+                                name: editValues?.name ?? "",
+                                description: editValues?.description ?? "",
+                                variants: updated,
+                              });
+                            }}
+                            className="w-1/2 p-1 m-2 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+                          />
+                          <input
+                            type="number"
+                            value={v.price ?? ""}
+                            placeholder="Price"
+                            onChange={(e) => {
+                              const updated = [...(editValues?.variants ?? [])];
+                              updated[i] = {
+                                ...updated[i],
+                                price: Number(e.target.value),
+                              };
+                              setEditValues({
+                                _id: editValues?._id,
+                                name: editValues?.name ?? "",
+                                description: editValues?.description ?? "",
+                                variants: updated,
+                              });
+                            }}
+                            className="w-1/2 p-1 rounded border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-gray-700 dark:text-gray-300 font-semibold">
+                            {v.size}
+                          </div>
+                          <div className="text-gray-500 dark:text-gray-400">
+                            Rs {v.price}
+                          </div>
+                        </>
+                      )}
+                    </motion.div>
+                  )
+                )}
+
+                {/* Perfume calculated prices (only show if we have any computed perfume price) */}
+                {perfumePrices &&
+                  Object.values(perfumePrices).some((val) => val !== null) && (
+                    <div className="mt-3 border-t pt-3">
+                      <div className="text-sm font-semibold mb-2 text-purple-600 dark:text-purple-300">
+                        Perfume Prices (auto-calculated)
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>5ml</div>
+                        <div>
+                          {perfumePrices["5ml"] != null
+                            ? `Rs ${perfumePrices["5ml"]}`
+                            : "-"}
                         </div>
-                        <div className="text-gray-500 dark:text-gray-400">
-                          Rs {v.price}
+
+                        <div>15ml</div>
+                        <div>
+                          {perfumePrices["15ml"] != null
+                            ? `Rs ${perfumePrices["15ml"]}`
+                            : "-"}
                         </div>
-                      </>
-                    )}
-                  </motion.div>
-                ))}
+
+                        <div>30ml</div>
+                        <div>
+                          {perfumePrices["30ml"] != null
+                            ? `Rs ${perfumePrices["30ml"]}`
+                            : "-"}
+                        </div>
+
+                        <div>50ml</div>
+                        <div>
+                          {perfumePrices["50ml"] != null
+                            ? `Rs ${perfumePrices["50ml"]}`
+                            : "-"}
+                        </div>
+
+                        <div>100ml</div>
+                        <div>
+                          {perfumePrices["100ml"] != null
+                            ? `Rs ${perfumePrices["100ml"]}`
+                            : "-"}
+                        </div>
+                      </div>
+
+                      <div className="text-xs mt-2 text-gray-500 dark:text-gray-400">
+                        Magnetic box price included (Rs 450). Fancy bottle +Rs 450
+                        extra.
+                      </div>
+                    </div>
+                  )}
               </div>
 
               {/* Actions */}
