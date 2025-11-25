@@ -27,7 +27,7 @@ const Navbar = () => {
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <Image
-              src="/elevated-logo.png"
+              src="/Islamic-logo.png"
               alt="PerfumeShop Logo"
               width={112}
               height={112}

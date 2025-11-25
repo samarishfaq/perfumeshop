@@ -173,7 +173,7 @@ export default function ProductsPage() {
 
       // Header
       doc.setFontSize(16);
-      doc.text("Elevated Creations — Price List", 40, 40);
+      doc.text("Islamic Scentiments — Price List", 40, 40);
       doc.setFontSize(10);
       doc.text(`Generated: ${new Date().toLocaleString()}`, 40, 55);
 
@@ -225,7 +225,7 @@ export default function ProductsPage() {
         }
       });
 
-      doc.save("Elevated-Creations-Price-List.pdf");
+      doc.save("Islamic-Scentiments-Price-List.pdf");
       toast.success("PDF generated successfully!");
     } catch (err) {
       console.error(err);
