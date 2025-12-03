@@ -199,13 +199,13 @@ export default function ProductsPage() {
     if (price12 != null) {
       const perMl = price12 / 12;
       // 15ml => perMl * 5 + 350  (your specified formula)
-      result["15ml"] = Math.round(perMl * 5 + 350);
+      result["15ml"] = Math.round(perMl * 4 + 280);
       // 30ml => perMl * 10 + 350
-      result["30ml"] = Math.round(perMl * 10 + 350);
+      result["30ml"] = Math.round(perMl * 9 + 350);
       // 50ml => perMl * 20 + 550
-      result["50ml"] = Math.round(perMl * 20 + 550);
+      result["50ml"] = Math.round(perMl * 18 + 450);
       // 100ml => perMl * 40 + 650
-      result["100ml"] = Math.round(perMl * 40 + 650);
+      result["100ml"] = Math.round(perMl * 38 + 500);
     }
 
     return result;
@@ -302,7 +302,7 @@ export default function ProductsPage() {
       // Top notes for perfume PDF
       doc.setFontSize(11);
       doc.text("Magnetic Box Charge Extra ( If You Need ): Rs 450", 40, 75);
-      doc.text("Fancy Perfume Bottle Charge Extra ( If You Need ): Rs 450 ", 40, 90);
+      doc.text("Fancy Perfume Bottle Charge Extra ( If You Need ): Rs 200 ", 40, 90);
 
       let y = 110;
 
@@ -734,7 +734,7 @@ export default function ProductsPage() {
                       </div>
 
                       <div className="text-xs mt-2 text-gray-500 dark:text-gray-400">
-                        Magnetic box price included (Rs 450). Fancy bottle +Rs 450
+                        Magnetic box price included (Rs 450). Fancy bottle +Rs 200
                         extra.
                       </div>
                     </div>
